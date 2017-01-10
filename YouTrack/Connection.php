@@ -423,22 +423,19 @@ class Connection
      * @param string $summary the obligatory issue summary
      * @param array $params optional additional parameters for the new issue (look into your personal youtrack
      *     instance!)
-     * @return Issue
+     * @return boolean
      */
     public function createIssue($project, $summary, $params = array())
     {
         $params['project'] = (string)$project;
         $params['summary'] = (string)$summary;
 
-        array_walk(
-            $params,
-            function (&$value) {
-                // php manual: If funcname needs to be working with the actual values of the array,
-                //  specify the first parameter of funcname as a reference. Then, any changes made to
-                //  those elements will be made in the original array itself.
-                $value = (string)$value;
-            }
-        );
+        array_walk($params, function (&$value) {
+            // php manual: If funcname needs to be working with the actual values of the array,
+            //  specify the first parameter of funcname as a reference. Then, any changes made to
+            //  those elements will be made in the original array itself.
+            $value = (string)$value;
+        });
         $body = [];
         foreach ($params as $k => $v) {
             if (strlen($v) > 100) {
@@ -449,23 +446,8 @@ class Connection
         if (empty($body)) {
             $body = null;
         }
-        $r = $this->request('POST', '/issue?' . http_build_query($params), $body);
-        $response = $r['response'];
-        $content = $r['content'];
-        if (!empty($response['content_type'])) {
-            if (
-                preg_match('/application\/xml/', $response['content_type'])
-                || preg_match('/text\/xml/', $response['content_type'])
-            ) {
-                $result = simplexml_load_string($content);
-                $issue = $result;
-            }
-        }
-        if (!isset($issue)) {
-            $issue = $content;
-        }
-
-        return new Issue($issue, $this);
+        $r = $this->request('PUT', '/issue?' . http_build_query($params), $body);
+        return true;
     }
 
     /**
